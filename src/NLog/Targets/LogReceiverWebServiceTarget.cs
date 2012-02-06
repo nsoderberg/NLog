@@ -67,6 +67,9 @@ namespace NLog.Targets
         public LogReceiverWebServiceTarget()
         {
             this.Parameters = new List<MethodCallParameter>();
+#if WCF_SUPPORTED
+            this.IgnoreCommunicationExceptions = true;
+#endif
         }
 
         /// <summary>
@@ -84,6 +87,15 @@ namespace NLog.Targets
         /// <value>The name of the endpoint configuration.</value>
         /// <docgen category='Connection Options' order='10' />
         public string EndpointConfigurationName { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether to hide <c>CommunicationException</c>s or not.
+        /// </summary>
+        /// <value>
+        /// 	<c>true</c> if <c>CommunicationException</c>s are ignored; otherwise, <c>false</c>.
+        /// </value>
+        /// <docgen category='Connection Options' order='10' />
+        public bool IgnoreCommunicationExceptions { get; set; }
 
 #if !SILVERLIGHT2
         /// <summary>
@@ -254,11 +266,11 @@ namespace NLog.Targets
                     binding = new BasicHttpBinding();
                  }
 
-                client = new WcfLogReceiverClient(binding, new EndpointAddress(this.EndpointAddress));
+                client = new WcfLogReceiverClient(binding, new EndpointAddress(this.EndpointAddress), this.IgnoreCommunicationExceptions);
             }
             else
             {
-                client = new WcfLogReceiverClient(this.EndpointConfigurationName, new EndpointAddress(this.EndpointAddress));
+                client = new WcfLogReceiverClient(this.EndpointConfigurationName, new EndpointAddress(this.EndpointAddress), this.IgnoreCommunicationExceptions);
             }
 
             client.ProcessLogMessagesCompleted += (sender, e) =>

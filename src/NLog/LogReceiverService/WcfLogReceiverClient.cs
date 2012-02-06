@@ -31,6 +31,8 @@
 // THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
+using NLog.Common;
+
 #if WCF_SUPPORTED
 
 namespace NLog.LogReceiverService
@@ -57,9 +59,11 @@ namespace NLog.LogReceiverService
         /// Initializes a new instance of the <see cref="WcfLogReceiverClient"/> class.
         /// </summary>
         /// <param name="endpointConfigurationName">Name of the endpoint configuration.</param>
-        public WcfLogReceiverClient(string endpointConfigurationName) :
+        /// <param name="ignoreCommunicationException">if set to <c>true</c> ignore <c>CommunicationException</c>s</param>
+        public WcfLogReceiverClient(string endpointConfigurationName, bool ignoreCommunicationException = false) :
             base(endpointConfigurationName)
         {
+            this.IgnoreCommunicationExceptions = ignoreCommunicationException;
         }
 
         /// <summary>
@@ -67,9 +71,11 @@ namespace NLog.LogReceiverService
         /// </summary>
         /// <param name="endpointConfigurationName">Name of the endpoint configuration.</param>
         /// <param name="remoteAddress">The remote address.</param>
-        public WcfLogReceiverClient(string endpointConfigurationName, string remoteAddress) :
+        /// <param name="ignoreCommunicationException">if set to <c>true</c> ignore <c>CommunicationException</c>s</param>
+        public WcfLogReceiverClient(string endpointConfigurationName, string remoteAddress, bool ignoreCommunicationException = false) :
             base(endpointConfigurationName, remoteAddress)
         {
+            this.IgnoreCommunicationExceptions = ignoreCommunicationException;
         }
 
         /// <summary>
@@ -77,9 +83,11 @@ namespace NLog.LogReceiverService
         /// </summary>
         /// <param name="endpointConfigurationName">Name of the endpoint configuration.</param>
         /// <param name="remoteAddress">The remote address.</param>
-        public WcfLogReceiverClient(string endpointConfigurationName, EndpointAddress remoteAddress) :
+        /// <param name="ignoreCommunicationException">if set to <c>true</c> ignore <c>CommunicationException</c>s</param>
+        public WcfLogReceiverClient(string endpointConfigurationName, EndpointAddress remoteAddress, bool ignoreCommunicationException = false) :
             base(endpointConfigurationName, remoteAddress)
         {
+            this.IgnoreCommunicationExceptions = ignoreCommunicationException;
         }
 
         /// <summary>
@@ -87,9 +95,11 @@ namespace NLog.LogReceiverService
         /// </summary>
         /// <param name="binding">The binding.</param>
         /// <param name="remoteAddress">The remote address.</param>
-        public WcfLogReceiverClient(Binding binding, EndpointAddress remoteAddress) :
+        /// <param name="ignoreCommunicationException">if set to <c>true</c> ignore <c>CommunicationException</c>s</param>
+        public WcfLogReceiverClient(Binding binding, EndpointAddress remoteAddress, bool ignoreCommunicationException = false) :
             base(binding, remoteAddress)
         {
+            this.IgnoreCommunicationExceptions = ignoreCommunicationException;
         }
 
         /// <summary>
@@ -106,6 +116,14 @@ namespace NLog.LogReceiverService
         /// Occurs when Close operation has completed.
         /// </summary>
         public event EventHandler<AsyncCompletedEventArgs> CloseCompleted;
+
+        /// <summary>
+        /// Gets or sets a value indicating whether <c>CommunicationException</c>s should be ignored.
+        /// </summary>
+        /// <value>
+        /// 	<c>true</c> if <c>CommunicationException</c>s are ignored otherwise, <c>false</c>.
+        /// </value>
+        public bool IgnoreCommunicationExceptions { get; set; }
 
 #if SILVERLIGHT && !SILVERLIGHT2
         /// <summary>
@@ -217,7 +235,21 @@ namespace NLog.LogReceiverService
         /// <param name="result">The result.</param>
         void ILogReceiverClient.EndProcessLogMessages(IAsyncResult result)
         {
-            this.Channel.EndProcessLogMessages(result);
+            try
+            {
+                this.Channel.EndProcessLogMessages(result);
+            }
+            catch (CommunicationException ex)
+            {
+                if (!IgnoreCommunicationExceptions)
+                {
+                    throw;
+                }
+                else
+                {
+                    InternalLogger.Info("CommunicationException thrown and ignored: " + ex.Message);
+                }
+            }
         }
 
 #if SILVERLIGHT
