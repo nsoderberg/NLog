@@ -31,12 +31,11 @@
 // THE POSSIBILITY OF SUCH DAMAGE.
 // 
 
-using NLog.Common;
-
 #if WCF_SUPPORTED
 
 namespace NLog.LogReceiverService
 {
+    using NLog.Common;
     using System;
     using System.ComponentModel;
     using System.Net;
